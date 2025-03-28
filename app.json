@@ -12,6 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "fonts": [
+      "./assets/fonts/RetroGaming.ttf"
+    ],
     "ios": {
       "supportsTablet": true
     },
