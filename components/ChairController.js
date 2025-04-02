@@ -1,68 +1,48 @@
-import React, { useRef, forwardRef, useImperativeHandle } from 'react';
-import { Animated, Image, StyleSheet, Text, View } from 'react-native';
+import React, { useRef, forwardRef, useImperativeHandle, useState } from 'react';
+import { View, Animated, Image, StyleSheet } from 'react-native';
 
 const ChairController = forwardRef((props, ref) => {
-  // Animations
   const leftAnim = useRef(new Animated.Value(0)).current;
   const rightAnim = useRef(new Animated.Value(0)).current;
   const verticalAnim = useRef(new Animated.Value(0)).current;
-
-  // Vitesses
-  const speed = useRef({
-    up: 0,
-    down: 0,
-    left: 0,
-    right: 0
-  }).current;
-
-  const stopAll = () => {
-    leftAnim.setValue(0);
-    rightAnim.setValue(0);
-    verticalAnim.setValue(0);
-    Object.keys(speed).forEach(k => speed[k] = 0);
-  };
+  const [isMoving, setIsMoving] = useState(false);
 
   useImperativeHandle(ref, () => ({
-    moveChair: (direction) => {
-      stopAll();
-      
-      switch(direction) {
+    startAnimation(direction) {
+      if (isMoving) return; // Empêche de démarrer une nouvelle animation si déjà en mouvement
+      setIsMoving(true);
+
+      let animation;
+
+      switch (direction) {
         case 'UP':
-          speed.up = 50;
-          Animated.timing(verticalAnim, {
-            toValue: -50,
-            duration: 300,
-            useNativeDriver: true
-          }).start();
+          animation = Animated.timing(verticalAnim, { toValue: -10, duration: 500, useNativeDriver: true });
           break;
         case 'DOWN':
-          speed.down = 50;
-          Animated.timing(verticalAnim, {
-            toValue: 50,
-            duration: 300,
-            useNativeDriver: true
-          }).start();
+          animation = Animated.timing(verticalAnim, { toValue: 10, duration: 500, useNativeDriver: true });
           break;
         case 'LEFT':
-          speed.left = 30;
-          Animated.timing(leftAnim, {
-            toValue: -50,
-            duration: 300,
-            useNativeDriver: true
-          }).start();
+          animation = Animated.timing(leftAnim, { toValue: -10, duration: 500, useNativeDriver: true });
           break;
         case 'RIGHT':
-          speed.right = 30;
-          Animated.timing(rightAnim, {
-            toValue: 50,
-            duration: 300,
-            useNativeDriver: true
-          }).start();
+          animation = Animated.timing(rightAnim, { toValue: 10, duration: 500, useNativeDriver: true });
           break;
+        default:
+          return;
       }
+
+      animation.start(() => {
+        setIsMoving(false); // Permet de reprendre les mouvements après l'animation
+      });
     },
-    stopChair: stopAll,
-    getSpeed: () => ({ ...speed })
+    resetToCenter() {
+      // Réinitialiser la chaise au centre uniquement lorsque le bouton STOP est pressé
+      Animated.parallel([
+        Animated.timing(verticalAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+        Animated.timing(leftAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+        Animated.timing(rightAnim, { toValue: 0, duration: 500, useNativeDriver: true })
+      ]).start();
+    }
   }));
 
   return (
@@ -72,46 +52,34 @@ const ChairController = forwardRef((props, ref) => {
         { 
           transform: [
             { translateX: Animated.add(leftAnim, rightAnim) },
-            { translateY: verticalAnim }
+            { translateY: verticalAnim },
+            { scale: 1.5 }
           ]
         }
       ]}>
         <Image 
-          source={require('../assets/chair.png')} 
+          source={require('../assets/chair2.png')}
           style={styles.image}
         />
       </Animated.View>
-      
-      <View style={styles.speedContainer}>
-        <Text style={styles.speedText}>↑: {speed.up} | ↓: {speed.down}</Text>
-        <Text style={styles.speedText}>←: {speed.left} | →: {speed.right}</Text>
-      </View>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    marginBottom: 30
+    width: 250,
+    height: 250,
   },
   chair: {
-    width: 150,
-    height: 150
+    width: '100%',
+    height: '100%',
   },
   image: {
     width: '100%',
     height: '100%',
-    resizeMode: 'contain'
+    resizeMode: 'contain',
   },
-  speedContainer: {
-    marginTop: 20
-  },
-  speedText: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center'
-  }
 });
 
 export default ChairController;

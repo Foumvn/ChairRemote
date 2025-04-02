@@ -1,123 +1,60 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Vibration, Animated } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
 import ChairController from '../components/ChairController';
+
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const chairRef = useRef();
-  const soundRef = useRef();
   const [speedCounters, setSpeedCounters] = useState({
     up: 0,
     down: 0,
     left: 0,
-    right: 0
+    right: 0,
   });
-  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Charger le son
-  useEffect(() => {
-    const loadSound = async () => {
-      const { sound } = await Audio.Sound.createAsync(
-        require('../assets/sounds/click.mp3')
-      );
-      soundRef.current = sound;
-    };
-    loadSound();
-    return () => soundRef.current?.unloadAsync();
-  }, []);
-
-  const handlePress = async (direction) => {
-    Vibration.vibrate(50);
-    await soundRef.current?.replayAsync();
-    chairRef.current?.moveChair(direction);
-    
-    // Animation apparition compteur
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true
-    }).start();
+  // Exemple de fonction pour gérer les pressions de boutons
+  const handlePress = (direction) => {
+    chairRef.current.startAnimation(direction);
   };
 
-  const handleStop = async () => {
-    Vibration.vibrate(100);
-    await soundRef.current?.replayAsync();
-    chairRef.current?.stopChair();
-    
-    // Reset compteurs
-    setSpeedCounters({
-      up: 0,
-      down: 0,
-      left: 0,
-      right: 0
-    });
+  
+
+  const handleStop = () => {
+    if (chairRef.current) {
+      chairRef.current.resetToCenter();
+    }
   };
-
-  // Mise à jour des compteurs
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (chairRef.current) {
-        const speeds = chairRef.current.getSpeed();
-        setSpeedCounters(prev => ({
-          up: speeds.up > 0 ? prev.up + 1 : prev.up,
-          down: speeds.down > 0 ? prev.down + 1 : prev.down,
-          left: speeds.left > 0 ? prev.left + 1 : prev.left,
-          right: speeds.right > 0 ? prev.right + 1 : prev.right
-        }));
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <View style={styles.container}>
-      {/* Titre */}
-      
-      {/* Chaise + Compteurs */}
-      <View style={styles.chairContainer}>
+      {/* Header */}
+      <Text style={styles.title}>COMMANDE CHAISE</Text>
+
+      {/* Chaise CENTRÉE avec boutons intégrés */}
+      <View style={styles.chairSection}>
         <ChairController ref={chairRef} />
         
-        <Animated.View style={[styles.speedDisplay, { opacity: fadeAnim }]}>
-          <View style={styles.speedRow}>
-            <Text style={styles.speedLabel}>↑</Text>
-            <Text style={styles.speedValue}>{speedCounters.up}</Text>
-          </View>
-          <View style={styles.speedRow}>
-            <Text style={styles.speedLabel}>↓</Text>
-            <Text style={styles.speedValue}>{speedCounters.down}</Text>
-          </View>
-          <View style={styles.speedRow}>
-            <Text style={styles.speedLabel}>←</Text>
-            <Text style={styles.speedValue}>{speedCounters.left}</Text>
-          </View>
-          <View style={styles.speedRow}>
-            <Text style={styles.speedLabel}>→</Text>
-            <Text style={styles.speedValue}>{speedCounters.right}</Text>
-          </View>
-        </Animated.View>
-      </View>
-
-      {/* Contrôles directionnels */}
-      <View style={styles.controls}>
-        {/* Bouton Haut */}
-        <TouchableOpacity 
-          style={[styles.button, styles.topButton]} 
-          onPress={() => handlePress('UP')}
-        >
-          <Ionicons name="arrow-up" size={32} color="white" />
-        </TouchableOpacity>
-
-        {/* Ligne centrale */}
-        <View style={styles.middleRow}>
+        {/* Boutons autour de la chaise */}
+        <View style={styles.controlsWrapper}>
+          {/* Bouton Haut */}
           <TouchableOpacity 
-            style={[styles.button, styles.sideButton]} 
-            onPress={() => handlePress('LEFT')}
+            style={[styles.button, styles.topButton]} 
+            onPress={() => handlePress('UP')}
           >
-            <Ionicons name="arrow-back" size={32} color="white" />
+            <Ionicons name="arrow-up" size={24} color="white" />
           </TouchableOpacity>
 
+          {/* Bouton Gauche */}
+          <TouchableOpacity 
+            style={[styles.button, styles.leftButton]} 
+            onPress={() => handlePress('LEFT')}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+
+          {/* Bouton STOP (centré) */}
           <TouchableOpacity 
             style={[styles.button, styles.stopButton]} 
             onPress={handleStop}
@@ -125,21 +62,31 @@ export default function HomeScreen() {
             <Text style={styles.buttonText}>STOP</Text>
           </TouchableOpacity>
 
+          {/* Bouton Droite */}
           <TouchableOpacity 
-            style={[styles.button, styles.sideButton]} 
+            style={[styles.button, styles.rightButton]} 
             onPress={() => handlePress('RIGHT')}
           >
-            <Ionicons name="arrow-forward" size={32} color="white" />
+            <Ionicons name="arrow-forward" size={24} color="white" />
+          </TouchableOpacity>
+
+          {/* Bouton Bas */}
+          <TouchableOpacity 
+            style={[styles.button, styles.bottomButton]} 
+            onPress={() => handlePress('DOWN')}
+          >
+            <Ionicons name="arrow-down" size={24} color="white" />
           </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Bouton Bas */}
-        <TouchableOpacity 
-          style={[styles.button, styles.bottomButton]} 
-          onPress={() => handlePress('DOWN')}
-        >
-          <Ionicons name="arrow-down" size={32} color="white" />
-        </TouchableOpacity>
+      {/* Compteurs en bas */}
+      <View style={styles.speedDisplay}>
+        {/* Affichage des compteurs (ajoutez votre logique ici) */}
+        <Text style={styles.counterText}>Up: {speedCounters.up}</Text>
+        <Text style={styles.counterText}>Down: {speedCounters.down}</Text>
+        <Text style={styles.counterText}>Left: {speedCounters.left}</Text>
+        <Text style={styles.counterText}>Right: {speedCounters.right}</Text>
       </View>
     </View>
   );
@@ -148,87 +95,70 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white', // Noir pur
-    alignItems: 'center',
+    backgroundColor: 'white',
     paddingTop: 30,
   },
   title: {
-    color: '#00FF00', // Vert télécommande
-    fontSize: 24,
+    color: '#0F0',
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 20,
-    fontFamily: 'monospace',
+    textAlign: 'center',
+    marginBottom: 10,
   },
-  chairContainer: {
+  chairSection: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 30,
+    position: 'relative', // Pour positionner les boutons absolument
   },
-  controls: {
-    marginBottom: 50,
-    alignItems: 'center',
+  controlsWrapper: {
+    position: 'absolute',
+    width: width * 0.7,
+    aspectRatio: 1,
   },
   button: {
-    backgroundColor: '#333333',
+    position: 'absolute',
+    backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 40,
-    borderWidth: 1,
-    borderColor: '#555555',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
   },
   topButton: {
-    width: 70,
-    height: 70,
-    marginBottom: 15,
+    top: 0,
+    left: '50%',
+    transform: [{ translateX: -25 }],
   },
-  middleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
+  leftButton: {
+    left: 0,
+    top: '50%',
+    transform: [{ translateY: -25 }],
   },
-  sideButton: {
-    width: 70,
-    height: 70,
-    marginHorizontal: 15,
-  },
-  stopButton: {
-    width: 100,
-    height: 70,
-    backgroundColor: '#FF0000',
+  rightButton: {
+    right: 0,
+    top: '50%',
+    transform: [{ translateY: -25 }],
   },
   bottomButton: {
-    width: 70,
-    height: 70,
+    bottom: 0,
+    left: '50%',
+    transform: [{ translateX: -25 }],
   },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 18,
+  stopButton: {
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -25 }, { translateY: -25 }],
+    backgroundColor: '#F00',
+    width: 60,
+    height: 60,
   },
   speedDisplay: {
-    position: 'absolute',
-    bottom: -20,
-    backgroundColor: 'rgba(30, 30, 30, 0.9)',
-    borderRadius: 10,
-    padding: 10,
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#00FF00',
-  },
-  speedRow: {
-    marginHorizontal: 10,
+    marginTop: 20,
     alignItems: 'center',
   },
-  speedLabel: {
-    color: '#00FF00',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  speedValue: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 5,
+  counterText: {
+    color: '#FFF',
+    fontSize: 16,
   },
 });
